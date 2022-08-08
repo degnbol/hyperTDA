@@ -1,6 +1,6 @@
 #!/usr/bin/env julia
 ROOT = readchomp(`git root`)
-include("path_utils.jl") # glob that accepts abspath
+include("glob.jl") # glob that accepts abspath
 using DelimitedFiles
 using NPZ
 using Distances

@@ -2,7 +2,7 @@
 using ArgParse
 using DelimitedFiles
 using NPZ
-include("path_utils.jl") # glob that accepts abspath
+include("glob.jl") # glob that accepts abspath
 
 parser = ArgParseSettings(description="""
 Take xyz curve and interpolate linearly between points, given a fixed number of 

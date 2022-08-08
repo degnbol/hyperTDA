@@ -1,5 +1,5 @@
 #!/usr/bin/env julia
-include("path_utils.jl") # glob that accepts abspath
+include("glob.jl") # glob that accepts abspath
 include("string_utils.jl") # prefixSuffixPairs
 using DelimitedFiles
 using Random # shuffle
