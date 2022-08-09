@@ -39,7 +39,7 @@ using .Threads: @threads
 
 if length(ARGS) == 2 && isdir(ARGS[1])
     indir, outdir = ARGS
-    fnames = indir * '/' * readdir(indir)
+    fnames = joinpath.(indir, readdir(indir))
 else
     outdir = ARGS[end]
     @assert !ispath(outdir) || isdir(outdir) "If last arg exists it has to be a dir: $outdir"
@@ -49,7 +49,7 @@ mkpath(outdir)
 
 npys = fnames[endswith.(fnames, ".npy")]
 tsvs = fnames[endswith.(fnames, ".tsv")]
-println([npys; tsvs])
+# println([npys; tsvs])
 if isempty(tsvs) && !isempty(npys)
     pointclouds = npzread.(npys)
 elseif isempty(npys) && !isempty(tsvs)
@@ -74,7 +74,7 @@ pointclouds = xyz_dim1.(pointclouds)
 
 
 @threads for (pointcloud, fname) in collect(zip(pointclouds, fnames))
-    fname = joinpath(outdir, splitext(fname)[1] * ".json")
+    fname = joinpath(outdir, splitext(basename(fname))[1] * ".json")
     # same approach as in eirene source code
     d = pairwise(Euclidean(), pointcloud, dims=2)
     maxrad = maximum(d)
@@ -84,7 +84,8 @@ pointclouds = xyz_dim1.(pointclouds)
     representatives = [classrep(PH, class=i, dim=1) for i in 1:size(b, 1)]
     
     open(fname, "w") do io
-    	JSON.print(io, Dict("barcode" => b, "representatives" => representatives))
+    	d = Dict("barcode" => b, "representatives" => representatives)
+        JSON.print(io, d, 2) # indent = 2 spaces
     end
 end
 

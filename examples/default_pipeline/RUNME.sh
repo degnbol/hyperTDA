@@ -1,6 +1,7 @@
 #!/usr/bin/env zsh
 ROOT=`git root`
 export PATH="$PATH:$ROOT/src"
+cd $0:h
 
 # example without interpolation and uninterpolation.
 
@@ -8,16 +9,14 @@ export PATH="$PATH:$ROOT/src"
 # matrix with 3 columns.
 
 # calculate persistent homology
-julia --threads=8 xyz2PH.jl pointClouds/ PH/
+xyz2PH.jl pointClouds/ PH/
 
 # get node centralities from hypergraphs created from persistent homology
 HG_nodeCent.jl PH/ nodeCents/
 
-# get incidence matrices
+# get hypergraphs
 PH2hypergraph.jl PH/ H/
 
-# Run CNN on uninterpolated H and V to predict e.g. diffusion model
-# TODO set $pred, $V and $H, were we doing any example weighing edges?
-julia --threads=8 hypergraph_CNN.jl -m 8 -f 64 -F 32 -k 2 5 10 15 20 -e 500 --pair-files --cv \
-    -p $pred -V 'nodeCents_uninterp/*' -H 'H/*'
+# then open jupyter notebook and view partitions
+jupyter notebook
 

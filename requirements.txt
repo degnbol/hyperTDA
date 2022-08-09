@@ -1,0 +1,6 @@
+numpy
+pandas
+networkx
+python-louvain
+plotly
+notebook

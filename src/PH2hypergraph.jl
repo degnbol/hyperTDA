@@ -46,9 +46,9 @@ read_PH2B(path::AbstractString) = read_PH2hypergraph(path)[1]
 if abspath(PROGRAM_FILE) == @__FILE__
     INDIR, OUTDIR = ARGS
     mkpath(OUTDIR)
-    infiles = readdir(INDIR)
+    infiles = joinpath.(INDIR, readdir(INDIR))
     noext(s) = splitext(s)[1]
-    outnames = OUTDIR .* '/' .* noext.(basename.(infiles)) .* ".csv"
-    writedlm.(outnames, read_PH2B.(infiles))
+    outnames = joinpath.(OUTDIR, noext.(basename.(infiles)) .* ".csv")
+    writedlm.(outnames, read_PH2B.(infiles), ',')
 end
 

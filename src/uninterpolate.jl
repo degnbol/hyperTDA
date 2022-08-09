@@ -32,7 +32,8 @@ args = parse_args(ARGS, parser, as_symbols=true) |> NamedTuple
 
 infiles = glob(args.infiles)
 if length(infiles) == 1 && isdir(infiles[1])
-    infiles = readdir(args.infiles)
+    indir, = infiles
+    infiles = joinpath.(indir, readdir(indir))
 end
 
 noext(s::AbstractString) = splitext(s)[1]
