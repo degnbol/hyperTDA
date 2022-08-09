@@ -11,12 +11,15 @@ cd $0:h
 # calculate persistent homology
 xyz2PH.jl pointClouds/ PH/
 
-# get node centralities from hypergraphs created from persistent homology
-HG_nodeCent.jl PH/ nodeCents/
-
 # get hypergraphs
 PH2hypergraph.jl PH/ H/
 
-# then open jupyter notebook and view partitions
+# get node centralities from hypergraphs created from persistent homology
+HG_nodeCent.jl PH/ nodeCents/
+
+# community detection
+louvain.py PH/ pointClouds/ communities.json
+
+# then open jupyter notebook and view communities
 jupyter notebook
 
