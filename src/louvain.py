@@ -43,9 +43,15 @@ def create_graph_from_PH(barcodes, representatives, nPoints):
     
     return G
 
-def communities(barcodes, representatives, nPoints) -> dict:
+def communities(barcodes, representatives, nPoints):
     G = create_graph_from_PH(barcodes, representatives, nPoints)
-    return louvain(G, resolution=1)
+    comms = louvain(G, resolution=1)
+    # louvain returns dict mapping from node id to partition id.
+    # Node ids are simply the range from 0 to nPoints so we can throw keys away 
+    # by calling .values().
+    assertMsg = "If assert fails then node ids aren't simply a range that can be discarded"
+    assert np.all(np.asarray(list(comms.keys())) == np.arange(len(comms))), assertMsg
+    return list(comms.values())
 
 if __name__ == "__main__":
     
@@ -67,7 +73,7 @@ if __name__ == "__main__":
         n = len(np.load(filename_PC))
         partitions[name] = communities(b, r, n)
         # also works to show which curves analysis succeeded for
-        print(name, n, len(set(partitions[name].values())), sep='\t')
+        print(name, n, len(set(partitions[name])), sep='\t')
     
     with open(outfile, 'w') as fh:
         json.dump(partitions, fh, indent=True)
