@@ -2,9 +2,7 @@
 using LinearAlgebra
 using StatsBase
 using JSON
-
-include("PH2hypergraph.jl")
-
+include("PH2hypergraph.jl") # read_PH2hypergraph
 ROOT = readchomp(`git root`)
 TUDSICO = "$ROOT/Publications/Tudisco_2021/node-edge-hypergraph-centrality"
 include("$TUDSICO/centrality_tools.jl") # compute_centrality
@@ -27,9 +25,11 @@ function read_PH2centralities(path::AbstractString, fgϕψ="linear"; edgesAsHype
 end
 
 """
-Read PH, make hypergraph, calculate node and edge centralities, write to file without header.
+Read PH, make hypergraph, calculate node and edge centralities,
+write to json with entries "node_centrality" and "hyperedge_centrality".
 """
 function readwrite_PH2centralities(infname::AbstractString, outfname::AbstractString, fgϕψ="linear"; edgesAsHypernodes::Bool=false)
     x, y = read_PH2centralities(infname, fgϕψ; edgesAsHypernodes=edgesAsHypernodes)
     open(outfname, "w") do io JSON.print(io, Dict("node_centrality"=>x, "hyperedge_centrality"=>y), 1) end
 end
+

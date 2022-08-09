@@ -8,7 +8,7 @@ barcodes and representatives to .json files in OUTDIR/.
     "paths"
     arg_type = String
     nargs = '+'
-    help = "INDIR/ OUTDIR/ or INFILES... OUTDIR/"
+    help = "INDIR/ OUTDIR/ or INFILES... OUTDIR/. If OUTDIR doesn't exist, it will be created."
     "--dist", "-d"
     arg_type = Float64
     help = "Provide the typical distance between points (interpolation distance 
@@ -42,9 +42,10 @@ if length(ARGS) == 2 && isdir(ARGS[1])
     fnames = indir * '/' * readdir(indir)
 else
     outdir = ARGS[end]
-    @assert isdir(outdir) "Last arg $outdir has to be a dir."
+    @assert !ispath(outdir) || isdir(outdir) "If last arg exists it has to be a dir: $outdir"
     fnames = ARGS[1:end-1]
 end
+mkpath(outdir)
 
 npys = fnames[endswith.(fnames, ".npy")]
 tsvs = fnames[endswith.(fnames, ".tsv")]
@@ -70,10 +71,6 @@ function xyz_dim1(mat::AbstractMatrix)
     end
 end
 pointclouds = xyz_dim1.(pointclouds)
-
-
-function get_diameter(pointcloud::AbstractMatrix)
-end
 
 
 @threads for (pointcloud, fname) in collect(zip(pointclouds, fnames))

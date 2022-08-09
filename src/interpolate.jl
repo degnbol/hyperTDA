@@ -37,7 +37,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
 else
     # if interactive, do an example. You may need to unzip pointClouds.zip first.
     ROOT = readchomp(`git root`)
-    sArgs = "$ROOT/Data/HCT116_chr21-28-30Mb_untreated/pointClouds -o lars -n 100 -N 1"
+    sArgs = "$ROOT/Data/HCT116_chr21-28-30Mb_untreated/pointClouds/ -o interpolated/ -n 100 -N 1"
     args = split(sArgs, ' ')
 end
 args = parse_args(args, parser, as_symbols=true)
@@ -179,7 +179,7 @@ header = ["x", "y", "z", "interp"]
 nanRows === nothing || push!(header, "nan")
 header = join(header, delim) * '\n'
 
-ispath(args.out) || mkdir(args.out)
+mkpath(args.out)
 
 for i in 1:length(interps)
     interped, interpIdx = interps[i]

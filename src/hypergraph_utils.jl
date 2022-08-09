@@ -19,7 +19,7 @@ end
 
 """
 A_H defined in node and hyperedge centrality paper.
-The adjancecy matrix created from a hypergraph.
+The adjacency matrix created from a hypergraph.
 Symmetric.
 """
 function get_A_H(

@@ -1,9 +1,8 @@
 #!/usr/bin/env julia
 using JSON
 using SparseArrays
-include("hypergraph_utils.jl")
-
-# testpath = readchomp(`git root`) * "/Data/artificialSampleData/PH/generated_curve_0.json"
+using DelimitedFiles
+include("hypergraph_utils.jl") # hyperedges2B
 
 function representatives2hyperedges(representatives, edgesAsHypernodes::Bool=false)
     if !edgesAsHypernodes
@@ -34,10 +33,22 @@ function read_PH2hypergraph(path::AbstractString; edgesAsHypernodes::Bool=false)
     # persistences will be used as hyper edge weights
     persistences = barcodes[:, 2] - barcodes[:, 1]
     @assert all(persistences .> 0)
-
+    
     # representatives are each 2-tuples (edges). 
     representatives = PH["representatives"]
     hyperedges = representatives2hyperedges(representatives, edgesAsHypernodes)
     hyperedges2B(hyperedges), persistences
+end
+"Only get B matrix."
+read_PH2B(path::AbstractString) = read_PH2hypergraph(path)[1]
+
+# if run as script write hypergraph incidence matrix
+if abspath(PROGRAM_FILE) == @__FILE__
+    INDIR, OUTDIR = ARGS
+    mkpath(OUTDIR)
+    infiles = readdir(INDIR)
+    noext(s) = splitext(s)[1]
+    outnames = OUTDIR .* '/' .* noext.(basename.(infiles)) .* ".csv"
+    writedlm.(outnames, read_PH2B.(infiles))
 end
 

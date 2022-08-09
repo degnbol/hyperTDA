@@ -1,101 +1,80 @@
 #!/usr/bin/env julia
+using ArgParse
 using JSON
-using StatsBase
-using Printf
-using NPZ
-using SparseArrays
-using Chain: @chain
-using DataFrames, CSV
 using DelimitedFiles
-ROOT = readchomp(`git root`)
-include("hypergraph_utils.jl") # hyperedges2B, get_A_H, get_A_repr
+using DataFrames, CSV
+include("glob.jl")
+include("uninterpolation.jl")
+include("PH2hypergraph.jl") # representatives2hyperedges, and from hypergraph_utils.jl hyperedges2B
 
-
-norm2(xyzs::Matrix) = sum(xyzs .^ 2; dims=2) .|> sqrt
-distances(xyz::AbstractVector, xyzs::Matrix) = norm2(xyz' .- xyzs) |> vec
-
-"""
-Get the index of a xyz point in the list (::Matrix) of interpolated points.
-"""
-function un2interp(xyz::AbstractVector, xyzs_i::Matrix)::Int
-    @chain xyz' .== xyzs_i all(dims=2) vec findall only
+parser = ArgParseSettings(description="""
+Take array and uninterpolate values, or given a json, provide an entry to uninterpolate.
+E.g. representatives from PH to create an uninterpolated incidence matrix H.
+""")
+@add_arg_table parser begin
+    "infiles"
+    required = true
+    arg_type = String
+    help = "Directory or glob pattern with tables (.tsv) or PH (.json)."
+    "outdir"
+    required = true
+    arg_type = String
+    help = "Directory name for writing outputs. Will be created if nonexistent."
+    "--interp", "-i"
+    required = true
+    arg_type = String
+    "--entry", "-e"
+    arg_type = String
+    help = "If jsons are given, specify which entry to uninterpolate."
 end
 
-"""
-Rolling weighted average sparse conversion matrix.
-Each interpolated point gets two weight values, one for each nearest real neighbor point. 
-The weights are based on eucledian distance, i.e. w1 = 1 - d1/(d1+d2) = d2/(d1+d2)
-The real points get an initial weight=1.
-By initial, it is meant that weights will be normalized (otherwise points with more interpolation neighbors would get falsely emphasized).
-- xyzs: real xyz points ordered along the curve
-- xyzs_i: real mixed with interpolated xyz points, still ordered along the curve
-return: matrix that converts from interpolated xyz to uninterpolated xyz. 
-E.g matrix is D, we want to convert node values b, we do D*b. 
-Similar if we want to convert hypergraph membership with D*B where B has shape (#interp, #hyperedges).
-"""
-function uninterp_average_weight(xyzs::Matrix, xyzs_i::Matrix)
-    @assert !any(isnan.(xyzs)) "NaN in xyzs at $(findall(any(isnan.(xyzs); dims=2)))"
-    # build sparse weights from xyz_i to xyz
-    xyz2interp = un2interp.(eachrow(xyzs), Ref(xyzs_i))
-    uninterp_average_weight(xyz2interp, xyzs_i)
+args = parse_args(ARGS, parser, as_symbols=true) |> NamedTuple
+
+infiles = glob(args.infiles)
+if length(infiles) == 1 && isdir(infiles[1])
+    infiles = readdir(args.infiles)
 end
-"""
--interp_idx: true for interpolation points and false for real points.
-"""
-function uninterp_average_weight(interp_idx::Union{BitVector,Vector{Bool}}, xyzs_i::Matrix)
-    uninterp_average_weight(findall(.!interp_idx), xyzs_i)
+
+noext(s::AbstractString) = splitext(s)[1]
+getext(s::AbstractString) = splitext(s)[end]
+ext = getext.(infiles) |> unique
+@assert length(ext) == 1 "All infiles should have the same extension: $ext"
+ext = only(ext)
+
+if ext == ".json"
+    @assert args.entry !== nothing "For json, -e/--entry should be given."
+    arrays = [j[args.entry] for j in JSON.parsefile.(infiles)]
+    ext = ".tsv" # for output
+elseif ext == ".tsv"
+    delim = '\t'
+    arrays = readdlm.(infiles, delim)
+elseif ext == ".csv"
+    delim = ','
+    arrays = readdlm.(infiles, delim)
+else
+    error("Unknown file format: $ext")
 end
-"""
--xyz2interp: int index for the location of each real point within xyzs_i.
-"""
-function uninterp_average_weight(xyz2interp::Vector{Int}, xyzs_i::Matrix)
-    @assert !any(isnan.(xyzs_i)) "NaN in xyzs_i at $(findall(any(isnan.(xyzs_i); dims=2)))"
-    # make sure interp_idx (should be boolean) wasn't accidentally given as ints ∈ {0, 1}.
-    if all((xyz2interp .== 0) .| (xyz2interp .== 1))
-        @info "Assuming ints ∈ {0,1} given are supposed to be bool."
-        return uninterp_average_weight(BitVector(xyz2interp), xyzs_i)
+
+# get matrix that converts between interpolated and uninterpolated indexes
+df_interp = CSV.read(args.interp, DataFrame)
+nInterp = nrow(df_interp)
+D = uninterp_average_weight(df_interp)
+
+if all(eltype.(arrays) .<: Real)
+    for array in arrays
+        # add zeros to end of node values. The last entries are missing because 
+        # those interp points were never added to a feauture so no hyperedges 
+        # contain them.
+        array = [array; zeros(nInterp - size(array, 1), size(array, 2))]
     end
-    
-    Is, Js, ws = Int[], Int[], Float64[]
-    for i in 1:length(xyz2interp)-1
-        # slice range for interp xyzs between real xyz i and i+1 (inclusive in both ends).
-        _js = xyz2interp[i]:xyz2interp[i+1]
-        xyz1to2 = xyzs_i[_js, :]
-        xyz1 = xyz1to2[begin, :]
-        xyz2 = xyz1to2[end, :]
-        # distance to the neighbor real points
-        d1s = sum((xyz1to2 .- xyz1') .^ 2; dims=2)
-        d2s = sum((xyz1to2 .- xyz2') .^ 2; dims=2)
-        # weightings toward the neighbor real points
-        w1s = @. d2s / (d1s + d2s)
-        w2s = @. d1s / (d1s + d2s)
-        # building sparse matrix
-        append!(Is, fill(i, length(w1s)))
-        append!(Is, fill(i+1, length(w2s)))
-        append!(Js, _js)
-        append!(Js, _js)
-        append!(ws, w1s)
-        append!(ws, w2s)
-    end
-    
-    # use max instead of add as combine function since we are adding real points twice 
-    # (except for the very first and last)
-    D = sparse(Is, Js, ws, length(xyz2interp), size(xyzs_i, 1), max)
-    # norm so weights sum to 1 for each real node
-    D = D ./ sum(D; dims=2) |> dropzeros
+elseif all(typeof.(arrays) .<: Vector) # typeof. instead of eltype since JSON will set eltype to Any
+    arrays = hyperedges2B.(representatives2hyperedges.(arrays), nInterp)
+else
+    uTypes = typeof.(arrays) |> unique
+    error("Unknown array format(s): $uTypes")
 end
 
-
-"""
-Read x,y,z,interpolated table, write D with standard average weight method.
-- infname: filename for table with columns x,y,z,interpolated where the last
-has 0 and 1 to indicate if node is interpolated or not.
-- outfname: write D matrix to this. D matrix has dim #uninterpolated nodes × #interpolated nodes.
-- delim: delimiter to use for both in- and outfile.
-"""
-function write_D(infname::AbstractString, outfname::AbstractString; delim='\t')
-    xyzs_i = CSV.read(infname, DataFrame; delim=delim)
-    D = uninterp_average_weight(BitVector(xyzs_i[:, "interp"]), Matrix(xyzs_i[:, ["x", "y", "z"]]))   
-    writedlm(outfname, D, delim)
-end
+mkpath(args.outdir)
+outnames = args.outdir .* '/' .* noext.(basename.(infiles)) .* ext
+writedlm.(outnames, D .* arrays, delim)
 
