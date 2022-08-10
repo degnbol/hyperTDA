@@ -20,6 +20,6 @@ HG_nodeCent.jl PH/ nodeCents/
 # community detection
 louvain.py PH/ pointClouds/ communities.json
 
-# then open jupyter notebook and view communities
-jupyter notebook
+# then open jupyter notebook and view communities and centrality
+jupyter notebook result_visualisation.ipynb
 
