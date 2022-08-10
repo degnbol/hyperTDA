@@ -4,12 +4,12 @@ using SparseArrays
 using DelimitedFiles
 include("hypergraph_utils.jl") # hyperedges2B
 
-function representatives2hyperedges(representatives, edgesAsHypernodes::Bool=false)
+function representatives2hyperedges(representatives, edgesAsHypernodes::Bool=false, N=nothing)
     if !edgesAsHypernodes
         # Each representative is a generator where we take all nodes to form a hyperedge.
         return [Set(i for e in es for i in e) for es in representatives]
     else
-        N = maximum(i for es in representatives for e in es for i in e)
+        if N === nothing N = maximum(i for es in representatives for e in es for i in e) end
         # each 2-tuple becomes a hypernode 
         # so we will assign new int indexes for each element in a N×N adjacency matrix.
         ij = LinearIndices((N,N))
@@ -36,8 +36,9 @@ function read_PH2hypergraph(path::AbstractString; edgesAsHypernodes::Bool=false)
     
     # representatives are each 2-tuples (edges). 
     representatives = PH["representatives"]
+    N = "N" in PH ? PH["N"] : nothing
     hyperedges = representatives2hyperedges(representatives, edgesAsHypernodes)
-    hyperedges2B(hyperedges), persistences
+    hyperedges2B(hyperedges; N=N), persistences
 end
 "Only get B matrix."
 read_PH2B(path::AbstractString) = read_PH2hypergraph(path)[1]
