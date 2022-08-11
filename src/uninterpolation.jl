@@ -88,6 +88,6 @@ end
 "-df: DataFrame with x, y, z columns and bool column indicating interpolation."
 function uninterp_average_weight(df::DataFrame; interp::AbstractString="interp",
         x::AbstractString="x", y::AbstractString="y", z::AbstractString="z")
-    uninterp_average_weight(BitVector(xyzs_i[:, interp]), Matrix(xyzs_i[:, [x,y,z]]))   
+    uninterp_average_weight(BitVector(df[:, interp]), Matrix(df[:, [x,y,z]]))   
 end
 
