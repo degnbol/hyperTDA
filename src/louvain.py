@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import os, sys
 import numpy as np
+import pandas as pd
 import networkx as nx
 from community import best_partition as louvain
 import json
@@ -66,11 +67,16 @@ if __name__ == "__main__":
         name, ext = os.path.splitext(filename)
         if ext != ".json": continue
         name = os.path.basename(name)
-        filename_PC = os.path.join(PC_dir, name + ".npy")
-        if not os.path.isfile(filename_PC): continue
+        filename_PC = os.path.join(PC_dir, name)
+        if os.path.isfile(filename_PC + ".npy"):
+            n = len(np.load(filename_PC))
+        elif os.path.isfile(filename_PC + ".tsv"):
+            n = len(pd.read_table(filename_PC + ".tsv"))
+        else:
+            sys.stderr.write("File not found: "+filename_PC+".{npy,tsv}. nPoints can't be determined.\n")
+            continue
         
         b, r = load_PH(filename)
-        n = len(np.load(filename_PC))
         partitions[name] = communities(b, r, n)
         # also works to show which curves analysis succeeded for
         print(name, n, len(set(partitions[name])), sep='\t')
