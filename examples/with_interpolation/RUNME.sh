@@ -1,26 +1,29 @@
 #!/usr/bin/env zsh
 ROOT=`git root`
 export PATH="$PATH:$ROOT/src"
+cd $0:h
 
 # start with a folder pointClouds/ with .npy or .tsv files where each file is a 
 # matrix with 3 columns.
 
-# interpolate between points
-interpolate.jl pointClouds/ interpolated/ --points=100 --nans=0
+echo "interpolate between points"
+interpolate.jl pointClouds/ --out interpolated/ --points=500 --nans=0
 
-# calculate persistent homology
-julia --threads=8 xyz2PH.jl interpolated/ PH/
+echo "calculate persistent homology on interpolated points"
+xyz2PH.jl interpolated/ PH/
 
-# get node centralities from hypergraphs created from persistent homology
+echo "get node centralities from hypergraphs created from persistent homology"
 HG_nodeCent.jl PH/ nodeCents/
 
-# uninterpolate node values in case of interpolation
+echo "community detection"
+louvain.py PH/ interpolated/ communities.json
+
+echo "uninterpolate node values"
 uninterpolate.jl nodeCents/ nodeCents_uninterp/ --interp=interpolated/
-# uninterpolate incidence matrix created from PH in case of interpolation
+
+echo "uninterpolate hypergraph matrix created from PH"
 uninterpolate.jl PH/ H/ --interp=interpolated/ --entry=representatives
 
-# Run CNN on uninterpolated H and V to predict e.g. diffusion model
-# TODO set $pred, $V and $H, were we doing any example weighing edges?
-julia --threads=8 hypergraph_CNN.jl -m 8 -f 64 -F 32 -k 2 5 10 15 20 -e 500 --pair-files --cv \
-    -p $pred -V 'nodeCents_uninterp/*' -H 'H/*'
+echo "then open jupyter notebook and view communities and centrality"
+jupyter notebook result_visualisation.ipynb
 
