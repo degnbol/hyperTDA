@@ -19,10 +19,13 @@ echo "community detection"
 louvain.py PH/ interpolated/ communities.json
 
 echo "uninterpolate node values"
-uninterpolate.jl nodeCents/ nodeCents_uninterp/ --interp=interpolated/
+uninterpolate.jl --interp=interpolated/ nodeCents/ nodeCents_uninterp/
 
 echo "uninterpolate hypergraph matrix created from PH"
-uninterpolate.jl PH/ H/ --interp=interpolated/ --entry=representatives
+uninterpolate.jl --interp=interpolated/ PH/ H/ --entry=representatives
+
+echo "uninterpolate community associations"
+uninterpolate.jl --interp=interpolated/ communities.json communities_uninterp/ --categorical
 
 echo "then open jupyter notebook and view communities and centrality"
 jupyter notebook result_visualisation.ipynb
