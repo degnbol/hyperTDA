@@ -53,10 +53,10 @@ arg_type = String
 help = "Optionally write predictions to a given filename."
 "--load-model"
 arg_type = String
-help = "Optionally load model(s) to continue training."
+help = "Optionally load model(s) to continue training (.bson)."
 "--save-model", "-M"
 arg_type = String
-help = "Optionally write model(s) to a given filename."
+help = "Optionally write model(s) to a given filename (.bson)."
 "--epochs", "-e"
 arg_type = Int
 default = 1000
