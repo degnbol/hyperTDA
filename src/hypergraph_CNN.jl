@@ -22,7 +22,7 @@ the hyperedges.
 required = true
 arg_type = String
 nargs = '+'
-help = "Multiple glob patterns for filenames. 
+help = "Multiple glob patterns for filenames or directories. 
 Files should be comma delimited without header (or row index). 
 Incidence matrix for hypergraphs, i.e. nodes along first dim, hyperedges along second. 
 Each glob pattern is a separate label. 
@@ -30,7 +30,7 @@ Two glob patterns means boolean classifier, more means categorical."
 "--edge-values", "--weights", "-W"
 arg_type = String
 nargs = '+'
-help = "Multiple glob patterns for filenames. 
+help = "Multiple glob patterns for filenames or directories. 
 Files are each simply a column vector, so a single scalar on each line, no header or row index.
 Hyperedge weight columns for hypergraphs. 
 Same number of entries as --hypergraphs/-H. 
@@ -121,11 +121,11 @@ if abspath(PROGRAM_FILE) == @__FILE__
 else
     # if interactive, do an example
     ROOT = readchomp(`git root`)
-    # fnames_H = ["$ROOT/Data/HCT116_chr21-28-30*$treat/uninterpEdgeCents_linear/*-hEdge2node.csv" for treat in ["untreated", "6hAuxin"]]
-    fnames_H = ["$ROOT/Data/trajectories/cnn_$i/uninterpEdgeCents_linear/*-hEdge2node.csv" for i in 0:4]
+    fnames_H = ["$ROOT/results/AnDi/Model_$i/H" for i in 0:4]
+    fnames_V = ["$ROOT/results/AnDi/Model_$i/nodeCents" for i in 0:4]
     fnames_H = join(fnames_H, ' ')
-    sArgs = "-m 8 -W 2node Cents -H $fnames_H -s 200 -V hEdge2node.csv comms.tsv --pair-files --save-model hej"
-    args = split(sArgs, ' ')
+    fnames_V = join(fnames_V, ' ')
+    args = split("-m 8 -H $fnames_H -V $fnames_V", ' ')
 end
 args = parse_args(args, parser, as_symbols=true)
 
@@ -160,15 +160,24 @@ if nodeVals
 end
 @assert args.pre ∈ [nothing, "nzalign", "nzranges"] "$(args.pre) ∉ [nzalign, nzranges]"
 
+"Function to check if a directory has been provided, and if so return all files in it."
+function dir2files(paths::AbstractVector)
+    length(paths) == 1 || return paths
+    path = only(paths)
+    isdir(path) || return paths
+    # this glob will not include hidden files, as opposed to a readdir call.
+    glob(path * "/*")
+end
+
 # read
 Hs, Ws, Vs, labels = Matrix[], Matrix[], Matrix[], Int[] 
 for (label, glob_H) ∈ enumerate(args.hypergraphs)
-    fnames_H = glob(glob_H)
+    fnames_H = glob(glob_H) |> dir2files
     nLabel = length(fnames_H)
     
     if edgeVals
         glob_W = args.edge_values[label]
-        fnames_W = glob(glob_W)
+        fnames_W = glob(glob_W) |> dir2files
         if args.pair_files
             nFnames_W = length(fnames_W)
             fnames_H, fnames_W, = prefixSuffixPairs(fnames_H, fnames_W)
@@ -178,11 +187,11 @@ for (label, glob_H) ∈ enumerate(args.hypergraphs)
             nLabel = length(fnames_H)
         end
         @assert(length(fnames_H) == length(fnames_W),
-                "$(length(fnames_H)) Hs != $(length(fnames_W)) Ws")
+                "$(length(fnames_H)) $(glob_H) != $(length(fnames_W)) $(glob_W)")
     end
     if nodeVals
         glob_V = args.node_values[label]
-        fnames_V = glob(glob_V)
+        fnames_V = glob(glob_V) |> dir2files
         if args.pair_files
             nFnames_V = length(fnames_V)
             fnames_H, fnames_V, fnames_H_idx, = prefixSuffixPairs(fnames_H, fnames_V)
@@ -196,7 +205,7 @@ for (label, glob_H) ∈ enumerate(args.hypergraphs)
             nLabel = length(fnames_H)
         end
         @assert(length(fnames_H) == length(fnames_V),
-                "$(length(fnames_H)) Hs != $(length(fnames_V)) Vs")
+                "$(length(fnames_H)) $(glob_H) != $(length(fnames_V)) $(glob_V)")
     end
     
     println("# Reading label $label from $nLabel hypergraphs matching:")
@@ -219,7 +228,7 @@ for (label, glob_H) ∈ enumerate(args.hypergraphs)
     # of if clauses and to have the ML work and to allow for more than a single 
     # feature it is nice to then also allow for 0-dim.
     if edgeVals
-        _Ws = readdlm.(fnames_W, ',')
+        _Ws = readdlm.(fnames_W)
         for (H, W) in zip(_Hs, _Ws)
             @assert(       size(H,2)  ==   size(W,1),
             "#hyperedges $(size(H,2)) != $(size(W,1))")
@@ -230,7 +239,7 @@ for (label, glob_H) ∈ enumerate(args.hypergraphs)
         _Ws = [ones(0, size(H,2)) for H ∈ _Hs]
     end
     if nodeVals
-        _Vs = readdlm.(fnames_V, ',')
+        _Vs = readdlm.(fnames_V)
         for (H, V) in zip(_Hs, _Vs)
             @assert(  size(H,1)  ==   size(V,1),
             "#nodes $(size(H,1)) != $(size(V,1))")
