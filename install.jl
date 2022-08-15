@@ -11,7 +11,7 @@ end
 using Pkg
 
 if env
-    Pkg.activate('.')
+    Pkg.activate(".")
     Pkg.instantiate()
 else
     Pkg.add([
