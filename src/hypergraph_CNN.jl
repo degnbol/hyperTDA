@@ -59,7 +59,7 @@ arg_type = String
 help = "Optionally write model(s) to a given filename (.bson)."
 "--epochs", "-e"
 arg_type = Int
-default = 1000
+default = 500
 help = "Number of epochs of training."
 "--early-stop", "-E"
 arg_type = Int
@@ -67,7 +67,7 @@ default = 200
 help = "If the best testset AUC was this many epochs ago, then stop training. Set to zero to disable."
 "--model", "-m"
 arg_type = Int
-default = 3
+default = 8
 # We should use both H and W. We can feed them as parallel features but the 
 # filter only does a linear combination of features, so we would have to give 
 # each feature multiple output values, that can then be combined in a 
@@ -172,12 +172,12 @@ end
 # read
 Hs, Ws, Vs, labels = Matrix[], Matrix[], Matrix[], Int[] 
 for (label, glob_H) ∈ enumerate(args.hypergraphs)
-    fnames_H = glob(glob_H) |> dir2files
+    fnames_H = eglob(glob_H) |> dir2files
     nLabel = length(fnames_H)
     
     if edgeVals
         glob_W = args.edge_values[label]
-        fnames_W = glob(glob_W) |> dir2files
+        fnames_W = eglob(glob_W) |> dir2files
         if args.pair_files
             nFnames_W = length(fnames_W)
             fnames_H, fnames_W, = prefixSuffixPairs(fnames_H, fnames_W)
@@ -191,7 +191,7 @@ for (label, glob_H) ∈ enumerate(args.hypergraphs)
     end
     if nodeVals
         glob_V = args.node_values[label]
-        fnames_V = glob(glob_V) |> dir2files
+        fnames_V = eglob(glob_V) |> dir2files
         if args.pair_files
             nFnames_V = length(fnames_V)
             fnames_H, fnames_V, fnames_H_idx, = prefixSuffixPairs(fnames_H, fnames_V)
