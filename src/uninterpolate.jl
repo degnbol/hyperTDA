@@ -45,6 +45,13 @@ if length(infiles) == 1 && isdir(infiles[1])
     infiles = joinpath.(indir, readdir(indir))
 end
 
+# filter out empty files
+emptyIdx = filesize.(infiles) .== 0
+if any(emptyIdx)
+    @warn "skipping empty files" infiles[emptyIdx]
+    infiles = infiles[.!emptyIdx]
+end
+
 noext(s::AbstractString) = splitext(s)[1]
 getext(s::AbstractString) = splitext(s)[end]
 names = noext.(basename.(infiles))

@@ -9,10 +9,19 @@ INDIR, OUTDIR = ARGS
 
 mkpath(OUTDIR)
 
-for file in glob("$INDIR/*.json")
+infiles = glob("$INDIR/*.json")
+
+# filter out empty files
+emptyIdx = filesize.(infiles) .== 0
+if any(emptyIdx)
+    @warn "skipping empty files" infiles[emptyIdx]
+    infiles = infiles[.!emptyIdx]
+end
+
+for file in infiles
     fname = splitext(basename(file))[1]
-    # print(fname)
-    nodeCents, _ = read_PH2centralities("$file", "max") 
+    println(fname)
+    nodeCents, _ = read_PH2centralities("$file", "max")
     writedlm("$OUTDIR/$fname.tsv", nodeCents)
 end
 

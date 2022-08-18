@@ -66,6 +66,9 @@ if __name__ == "__main__":
         filename = os.path.join(PH_dir, filename)
         name, ext = os.path.splitext(filename)
         if ext != ".json": continue
+        if os.path.getsize(filename) == 0:
+            sys.stderr.write(f"Empty file: {filename}\n")
+            continue
         name = os.path.basename(name)
         filename_PC = os.path.join(PC_dir, name)
         if os.path.isfile(filename_PC + ".npy"):
