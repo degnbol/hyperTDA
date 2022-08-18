@@ -6,12 +6,15 @@ include("PH2hypergraph.jl") # read_PH2hypergraph
 ROOT = readchomp(`git root`)
 TUDSICO = "$ROOT/Publications/Tudisco_2021/node-edge-hypergraph-centrality"
 include("$TUDSICO/centrality_tools.jl") # compute_centrality
+using Suppressor # kill stdout and stderr
 
 fgϕψs = Dict("linear"  => (x -> x, x -> x,         x -> x,       x -> x        ), 
              "log-exp" => (x -> x, x -> x.^(1/10), x -> log.(x), x -> exp.(x)  ),
              "max"     => (x -> x, x -> x.^(1/5),  x -> x.^15,   x -> x.^(1/15)))
 
-compute_centrality(B, fgϕψ::String; kwargs...) = compute_centrality(B, fgϕψs[lowercase(fgϕψ)]; kwargs...)
+function compute_centrality(B, fgϕψ::String; kwargs...)
+    @suppress compute_centrality(B, fgϕψs[lowercase(fgϕψ)]; kwargs...)
+end
 
 """
 Compute node and edge centralities from a hypergraph made from PH.
