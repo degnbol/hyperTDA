@@ -10,5 +10,5 @@ for file in ../Model_?/{H,nodeCents}.zip; do
     fi
 done
 
-hypergraph_CNN.jl --cv -m 8 -k 2 5 10 15 20 -f 64 -F 32 -e 500 -E 150 -H ../Model_?/H/ -V ../Model_?/nodeCents/ --pred=pred.tsv --save-model model.bson
+julia -t 16 $ROOT/src/hypergraph_CNN.jl --cv -m 8 -k 2 5 10 15 20 -f 64 -F 32 -e 500 -E 150 -H ../Model_?/H/ -V ../Model_?/nodeCents/ --pred=pred.tsv --save-model model.bson
 
