@@ -514,6 +514,7 @@ fmtval(v::String) = v
 fmtval(v::Real) = @sprintf "%.10f" v
 printrow(vs...) = begin
     join((fmtval(v) for v ∈ vs), '\t') |> println
+    flush(stdout)
 end
 
 cv_parts = 5
