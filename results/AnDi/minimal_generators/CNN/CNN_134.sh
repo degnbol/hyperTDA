@@ -8,5 +8,5 @@ d2=`sed '2!d' diffusions.txt`
 d4=`sed '4!d' diffusions.txt`
 d5=`sed '5!d' diffusions.txt`
 
-hypergraph_CNN.jl -m 8 -k 2 5 10 15 20 -f 64 -F 32 -e 500 -H ../H/{$d2,$d4,$d5}.csv -V ../nodeCents_uninterp/{$d2,$d4,$d5}.tsv --pred=pred_134.tsv --save-model=model_134.bson
+hypergraph_CNN.jl --cv -m 8 -k 2 5 10 15 20 -f 64 -F 32 -e 500 -E 100 -H ../H/{$d2,$d4,$d5}.csv -V ../nodeCents_uninterp/{$d2,$d4,$d5}.tsv --pred=pred_134.tsv --save-model=model_134.bson
 

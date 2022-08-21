@@ -10,14 +10,17 @@ BitMatrix type.
 function onehotBit(labels::Vector{Int}, uLabels=sort(unique(labels)))::BitMatrix
     labels' .== uLabels
 end
+
 """
 Onehot encoding. Class (label) along first dim as expected by 
 (logit)crossentropy and other flux code.
 Flux sparse int matrix type.
 """
-function onehot(labels::Vector{Int}, uLabels=sort(unique(labels)))::Flux.OneHotMatrix
+function onehot(labels::AbstractVector, uLabels=sort(unique(labels)))::Flux.OneHotMatrix
+    # AbstractVector instead of Vector{Int} to allow for cuVector
     Flux.onehotbatch(labels, uLabels)
 end
+
 "Inverse of the onehot functions."
 function unonehot(labels::AbstractMatrix, uLabels=1:size(labels,1))::Vector{Int}
     iLabels = zeros(Int, size(labels, 2))

@@ -1,3 +1,2 @@
 #!/usr/bin/env zsh
-mkdir -p CNN
-sbatch -p mig -c 4 --mem=64G -t 8-00:00:00 -e CNN/slurm.err -o CNN/slurm.out ./CNN.sh
+sbatch -p mig-gpu -J 'gpuMini' -G 1 -c 1 --mem=32G -t 8-00:00:00 -e slurm.err -o slurm.out ./CNN.sh
