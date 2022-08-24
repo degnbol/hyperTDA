@@ -43,7 +43,7 @@ Create "parts" partitions by assigning each datapoint an integer in range 1:"par
 Partitioning picks balanced amounts from each label.
 """
 function CV(labels::Vector{Int}, parts::Int=5)::Vector{Int}
-    inds = [shuffle(findall(labels .== i)) for i in unique(labels)]
+    inds = [findall(labels .== i) for i in unique(labels)]
     # number of observations of each label
     Ns = length.(inds)
     # size of each of the "parts" partitions.
@@ -53,7 +53,10 @@ function CV(labels::Vector{Int}, parts::Int=5)::Vector{Int}
     # The last part may be a few datapoints smaller than the others.
     set_sizes = ceil.(Int, Ns ./ parts)
     # fill in an integer for each datapoint in range 1:"parts"
-    sets = zeros(Int, sum(Ns)) # prealloc
+    sets = zeros(Int, length(labels)) # alloc
+    # shuffle inds for each label so we assign partition randomly rather than 
+    # all the first observations of a given label is partition 1 etc.
+    shuffle!.(inds)
     for part in 1:parts
         for (_inds, set_size, N) in zip(inds, set_sizes, Ns)
             ind_range = (part-1)*set_size+1 : min(part*set_size, N)
