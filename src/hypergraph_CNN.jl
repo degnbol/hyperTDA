@@ -1,10 +1,13 @@
 #!/usr/bin/env julia
+using MKL # potential speedup over openBLAS
+using CUDA # use GPU if available
 include("glob.jl") # glob that accepts abspath
 include("string_utils.jl") # prefixSuffixPairs
 using DelimitedFiles
 using Random # shuffle
 using BSON: @load, @save
 using ArgParse
+using Dates
 
 parser = ArgParseSettings(autofix_names=true, description="""
 Take incidence matrix, e.g. 1s and 0s H or uninterpolated incidence matrix 
@@ -63,7 +66,7 @@ default = 500
 help = "Number of epochs of training."
 "--early-stop", "-E"
 arg_type = Int
-default = 200
+default = 100
 help = "If the best testset AUC was this many epochs ago, then stop training. Set to zero to disable."
 "--model", "-m"
 arg_type = Int
@@ -256,10 +259,12 @@ end
 # wait till after possible -h/--help call and file assertions
 using Statistics # mean, cor
 using Printf
-include("AUC.jl")
 include("flux_utils.jl")
 include("array_utils.jl") # add_dim
 include("hypergraph_utils.jl") # for args.pre
+include("AUC.jl")
+# not implemented for GPU
+AUC(ŷ::CuArray, y::CuArray) = AUC(cpu(ŷ), cpu(y))
 
 # boolean classifier, or categorical?
 uLabels = labels |> unique |> sort
@@ -472,8 +477,11 @@ new_model() = Chain(
     GlobalMaxPool(),
     x -> dropdims(x; dims=1),
     denseLayer(nLabels, nDenseIn)
-)
-
+) |> gpu
+# convert to CUDA if avail.
+# Both parameters when generating a model, and the feature data.
+features = gpu(features)
+labels = gpu(labels)
 
 # logit versions used instead of binCE(σ) and CE(softmax) for numerical 
 # stability: 
@@ -495,7 +503,8 @@ else
     acc(set, model) = begin
         preds = predict(set, model)
         # using argmax means we assume labels are some range 1:n
-        mean(view(labels, :, set)[onehot(argmax.(preds), uLabels)])
+        # the onehot indexing doesn't seem to work with GPU, so we call cpu
+        mean(cpu(labels[:, set])[onehot(argmax.(preds), uLabels)])
     end
 end
 
@@ -510,6 +519,7 @@ end
 bold(v) = "\033[1m$v\033[0m"
 fmtval(v::Int) = v
 fmtval(v::String) = v
+fmtval(v::DateTime) = string(v)
 # plenty of precision yet less than default float32 print.
 fmtval(v::Real) = @sprintf "%.10f" v
 printrow(vs...) = begin
@@ -550,11 +560,11 @@ for iTest ∈ iTests
         model = models[iModel]
         params = Flux.params(model)
 
-        println("Epoch\tCE\tAcc\tAUC\tTestAUC")
+        println("Epoch\tCE\tAcc\tAUC\tTestAUC\tTime")
         push!(best_params, deepcopy(collect(params)))
         best_auc = auc(testset, model)
         best_epoch = 0
-        printrow(0, CE(trainset, model), acc(trainset, model), auc(trainset, model), best_auc)
+        printrow(0, CE(trainset, model), acc(trainset, model), auc(trainset, model), best_auc, now())
         for epoch in 1:args.epochs
             for batchset in get_batches(trainset, 20)
                 train(batchset, params, model)
@@ -572,7 +582,7 @@ for iTest ∈ iTests
                 end
                 # use join on tuple instead of list since list will have a 
                 # type, and make epoch int->float sometimes.
-                printrow(epoch, CE(trainset, model), acc(trainset, model), auc(trainset, model), auc_test)
+                printrow(epoch, CE(trainset, model), acc(trainset, model), auc(trainset, model), auc_test, now())
             end
         end
 
@@ -598,6 +608,7 @@ end
 if args.cv
     println("avg eval AUC = ", mean(evalAUCs))
     println("avg eval Acc = ", mean(evalAccs))
+    best_params = cpu(best_params)
     inParamCor = [cor(vec.([abs.(best_params[i][1]), abs.(best_params[j][1])])...)
          for i in 1:length(best_params)
          for j in 1:i-1]
