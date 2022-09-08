@@ -1,6 +1,8 @@
 #!/usr/bin/env julia
 using MKL # potential speedup over openBLAS
-using CUDA # use GPU if available
+try using CUDA # use CUDA GPU if available (and CUDA is installed)
+catch; end
+include("metal_utils.jl") # use Metal GPU if available (and Metal is installed)
 include("glob.jl") # glob that accepts abspath
 include("string_utils.jl") # prefixSuffixPairs
 using DelimitedFiles
@@ -124,8 +126,8 @@ if abspath(PROGRAM_FILE) == @__FILE__
 else
     # if interactive, do an example
     ROOT = readchomp(`git root`)
-    fnames_H = ["$ROOT/results/AnDi/Model_$i/H" for i in 0:4]
-    fnames_V = ["$ROOT/results/AnDi/Model_$i/nodeCents" for i in 0:4]
+    fnames_H = ["$ROOT/results/AnDi/Matroid_generators/Model_$i/H" for i in 0:4]
+    fnames_V = ["$ROOT/results/AnDi/Matroid_generators/Model_$i/nodeCents" for i in 0:4]
     fnames_H = join(fnames_H, ' ')
     fnames_V = join(fnames_V, ' ')
     args = split("-m 8 -H $fnames_H -V $fnames_V", ' ')
@@ -262,9 +264,9 @@ using Printf
 include("flux_utils.jl")
 include("array_utils.jl") # add_dim
 include("hypergraph_utils.jl") # for args.pre
-include("AUC.jl")
-# not implemented for GPU
-AUC(ŷ::CuArray, y::CuArray) = AUC(cpu(ŷ), cpu(y))
+using ROC # https://github.com/diegozea/ROC.jl
+# not implemented for GPU, hence cpu
+AUC(ŷ, y) = ROC.roc(cpu(ŷ), cpu(y)) |> ROC.AUC
 
 # boolean classifier, or categorical?
 uLabels = labels |> unique |> sort
