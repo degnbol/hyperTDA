@@ -33,6 +33,7 @@ else
     "SparseArrays",
     "StatsBase",
     "PaddedViews",
+    "Suppressor",
     "MKL"])
     Pkg.add(url="https://github.com/diegozea/ROC.jl")
 end

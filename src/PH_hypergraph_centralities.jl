@@ -3,8 +3,7 @@ using LinearAlgebra
 using StatsBase
 using JSON
 include("PH2hypergraph.jl") # read_PH2hypergraph
-ROOT = readchomp(`git root`)
-TUDSICO = "$ROOT/Publications/Tudisco_2021/node-edge-hypergraph-centrality"
+TUDSICO = "../Publications/Tudisco_2021/node-edge-hypergraph-centrality"
 include("$TUDSICO/centrality_tools.jl") # compute_centrality
 using Suppressor # kill stdout and stderr
 
