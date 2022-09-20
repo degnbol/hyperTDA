@@ -26,8 +26,9 @@ end
 if abspath(PROGRAM_FILE) == @__FILE__
     args = ARGS
 else
-    # if interactive, do an example TODO
-    sArgs = ""
+    # if interactive, do an example.
+    # The example run can also be useful for precompilation of Eirene.
+    sArgs = "../examples/default_pipeline/pointClouds/ xyz2PH_test/ --H"
     args = split(sArgs, ' ')
 end
 args = parse_args(args, parser, as_symbols=true)

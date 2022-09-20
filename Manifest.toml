@@ -1,8 +1,8 @@
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.8.0"
+julia_version = "1.8.1"
 manifest_format = "2.0"
-project_hash = "18525c204f3858ffc728bab317a7f0447d59f81e"
+project_hash = "b36936c9c67d5125ef4f2eaa2107670250a72c4c"
 
 [[deps.AbstractFFTs]]
 deps = ["ChainRulesCore", "LinearAlgebra"]
@@ -1034,6 +1034,12 @@ deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
 git-tree-sha1 = "b2a7af664e098055a7529ad1a900ded962bca488"
 uuid = "2f80f16e-611a-54ab-bc61-aa92de5b98fc"
 version = "8.44.0+0"
+
+[[deps.PackageCompiler]]
+deps = ["LazyArtifacts", "Libdl", "Pkg", "UUIDs"]
+git-tree-sha1 = "d2f93cc940b4a3d1aba77b266cbd7c7d404568c7"
+uuid = "9b87118b-4619-50d2-8e1e-99f35a4d4d9d"
+version = "1.6.0"
 
 [[deps.PaddedViews]]
 deps = ["OffsetArrays"]
