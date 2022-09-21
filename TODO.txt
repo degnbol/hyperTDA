@@ -1,3 +1,0 @@
-
-specify file formats
-write partition along with pred if possible so we can actually track which files were in which partitions etc.
