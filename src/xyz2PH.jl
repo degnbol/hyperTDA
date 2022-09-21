@@ -32,7 +32,7 @@ else
     args = split(sArgs, ' ')
 end
 args = parse_args(args, parser, as_symbols=true)
-for (k,v) in args println("# $k = $v") end
+# for (k,v) in args println("# $k = $v") end
 args = NamedTuple(args)
 
 # load packages after potential -h/--help call.
@@ -42,11 +42,12 @@ using CSV, DataFrames
 using NPZ
 using DelimitedFiles
 using JSON
+using .Threads: @threads
 
 if length(args.paths) == 2 && isdir(args.paths[1])
     indir, outdir = args.paths
     fnames = readdir(indir; join=true)
-    println(length(fnames), " files found in $indir")
+    println("# $(length(fnames)) files found in $indir")
 else
     @assert length(args.paths) > 1 "Only one path given: $(args.paths)"
     outdir = args.paths[end]
@@ -83,29 +84,32 @@ end
 pointclouds = xyz_dim1.(pointclouds)
 
 
-for (pointcloud, fname) in collect(zip(pointclouds, fnames))
-    fname = joinpath(outdir, splitext(basename(fname))[1] * ".json")
-    # same approach as in eirene source code
-    d = pairwise(Euclidean(), pointcloud, dims=2)
-    maxrad = maximum(d)
-    numrad = args.dist === nothing ? Inf : ceil(Int, maxrad / args.dist)
-    maxdim = args.H2 ? 2 : 1
-    PH = eirene(d, maxdim=maxdim, minrad=0, maxrad=maxrad, numrad=numrad)
-    b1 = barcode(PH, dim=1)
-    r1 = [classrep(PH, class=i, dim=1) for i in 1:size(b1, 1)]
-    if args.H2
-        b2 = barcode(PH, dim=2)
-        r2 = [classrep(PH, class=i, dim=2) for i in 1:size(b2, 1)]
-    end
-    
-    println("Writing $fname")
-    open(fname, "w") do io
-    	d = Dict("barcode" => b1, "representatives" => r1)
-    	if args.H2
-            d["barcode_2"] = b2
-            d["representatives_2"] = r2
+@threads for (pointcloud, fname) in collect(zip(pointclouds, fnames))
+    @time begin
+        fname = joinpath(outdir, splitext(basename(fname))[1] * ".json")
+        # same approach as in eirene source code
+        d = pairwise(Euclidean(), pointcloud, dims=2)
+        maxrad = maximum(d)
+        numrad = args.dist === nothing ? Inf : ceil(Int, maxrad / args.dist)
+        maxdim = args.H2 ? 2 : 1
+        PH = eirene(d, maxdim=maxdim, minrad=0, maxrad=maxrad, numrad=numrad)
+        b1 = barcode(PH, dim=1)
+        r1 = [classrep(PH, class=i, dim=1) for i in 1:size(b1, 1)]
+        if args.H2
+            b2 = barcode(PH, dim=2)
+            r2 = [classrep(PH, class=i, dim=2) for i in 1:size(b2, 1)]
         end
-        JSON.print(io, d, 2) # indent = 2 spaces
+
+        open(fname, "w") do io
+            d = Dict("barcode" => b1, "representatives" => r1)
+            if args.H2
+                d["barcode_2"] = b2
+                d["representatives_2"] = r2
+            end
+            JSON.print(io, d, 2) # indent = 2 spaces
+        end
+        print("$fname\t$(size(pointcloud,2))\t")
     end
+    flush(stdout)
 end
 
