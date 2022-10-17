@@ -40,7 +40,10 @@ def create_graph_from_PH(barcodes, representatives, nPoints):
         for k in range(len(vx)):
             for j in range(k+1, len(vx)):
                 # -1 due to zero indexing
-                G.add_edge(vx[k]-1, vx[j]-1, weight=persistence)
+                u, v = vx[k]-1, vx[j]-1
+                # if edge already exists, we add to its weight
+                weight = G[u][v]["weight"] if G.has_edge(u, v) else 0
+                G.add_edge(u, v, weight=weight+persistence)
     
     return G
 
