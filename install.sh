@@ -1,4 +1,4 @@
-#!/usr/bin/env zsh
+#!/usr/bin/env sh
 # make a command "git root" that gives the root folder of the repo.
 git config alias.root 'rev-parse --show-toplevel'
 # make sure submodules of other publications are initialized.
