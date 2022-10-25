@@ -23,6 +23,7 @@ else
     "Combinatorics",
     "CSV",
     "DataFrames",
+    "Suppressor",
     "DelimitedFiles",
     "Distances",
     "Glob",
