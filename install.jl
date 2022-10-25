@@ -21,6 +21,8 @@ else
     "BSON",
     "Chain",
     "Combinatorics",
+    "CSV",
+    "DataFrames",
     "DelimitedFiles",
     "Distances",
     "Glob",
