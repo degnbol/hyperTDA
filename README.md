@@ -4,7 +4,7 @@ Associated with preprint "Hypergraphs for multiscale cycles in structured data" 
 
 ## REQUIREMENTS
 - Julia (tested on v1.7.3)
-- Python3 (tested on v3.9.7)
+- Python (tested on v3.10.6)
 - unix shell (tested on zsh v5.8.1)
 
 ## INSTALL
@@ -14,6 +14,8 @@ Associated with preprint "Hypergraphs for multiscale cycles in structured data" 
 - Python packages are listed in `requirements.txt` and can be installed with 
   e.g. `pip install -r requirements.txt` or `conda create --name=hyperTDA 
   --file=requirements.txt` requiring either `pip` (pip3) or `conda` (e.g. miniconda3 or miniforge).
+  For the exact versions tested on Mac OS with Arm64 architecture use 
+  `requirements_tested.txt`.
 
 ## EXAMPLE USE
 Example input files, commands and output files are provided in subfolders of `examples/`. See `RUNME.sh` for each example.
