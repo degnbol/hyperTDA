@@ -37,13 +37,13 @@ using DelimitedFiles
 using JSON
 using .Threads: @threads
 
-if length(ARGS) == 2 && isdir(ARGS[1])
-    indir, outdir = ARGS
-    fnames = joinpath.(indir, readdir(indir))
+if length(args.paths) == 2 && isdir(args.paths[1])
+    indir, outdir = args.paths
+    fnames = readdir(indir; join=true)
 else
-    outdir = ARGS[end]
+    outdir = args.paths[end]
     @assert !ispath(outdir) || isdir(outdir) "If last arg exists it has to be a dir: $outdir"
-    fnames = ARGS[1:end-1]
+    fnames = args.paths[1:end-1]
 end
 mkpath(outdir)
 
@@ -56,6 +56,8 @@ elseif isempty(npys) && !isempty(tsvs)
     pointclouds = CSV.read.(tsvs, DataFrame; delim='\t')
     # assume there exist 3 columns named x,y,z
     pointclouds = [pc[:, ["x", "y", "z"]] for pc in pointclouds] .|> Matrix
+elseif isempty([npys; tsvs])
+    error("No .npy nor .tsv files found.")
 else
     error("Both .npy and .tsv files given.")
 end

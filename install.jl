@@ -31,6 +31,8 @@ else
     "Revise",
     "SharedArrays",
     "SparseArrays",
-    "StatsBase"])
+    "StatsBase",
+    "PaddedViews",
+    "MKL"])
     Pkg.add(url="https://github.com/diegozea/ROC.jl")
 end
