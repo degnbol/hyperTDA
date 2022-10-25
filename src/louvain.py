@@ -56,7 +56,7 @@ def communities(barcodes, representatives, nPoints):
 
 if __name__ == "__main__":
     
-    PH_dir, PC_dir, outfile = sys.argv[1:]
+    PH_dir, PC_dir, outfile = sys.argv[-3:]
     
     partitions = {}
     
@@ -72,7 +72,7 @@ if __name__ == "__main__":
         name = os.path.basename(name)
         filename_PC = os.path.join(PC_dir, name)
         if os.path.isfile(filename_PC + ".npy"):
-            n = len(np.load(filename_PC))
+            n = len(np.load(filename_PC + ".npy"))
         elif os.path.isfile(filename_PC + ".tsv"):
             n = len(pd.read_table(filename_PC + ".tsv"))
         else:
