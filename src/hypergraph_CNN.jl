@@ -116,6 +116,15 @@ action = :store_true
 help = "Relax expectation that files are sorted and paired, and find the 
 filename pairs between H, W, and V when there may be inconcsistent file count 
 and order."
+"--0H"
+action = :store_true
+help = "For testing purposes. Set all entries in H to zero."
+"--0W"
+action = :store_true
+help = "For testing purposes. Set all entries in W to zero."
+"--0V"
+action = :store_true
+help = "For testing purposes. Set all entries in V to zero."
 end
 
 # if run as script
@@ -172,7 +181,7 @@ function dir2files(paths::AbstractVector)
     glob(path * "/*")
 end
 
-# read
+# READ
 Hs, Ws, Vs, labels = Matrix[], Matrix[], Matrix[], Int[] 
 for (label, glob_H) ∈ enumerate(args.hypergraphs)
     fnames_H = eglob(glob_H) |> dir2files
@@ -255,6 +264,17 @@ for (label, glob_H) ∈ enumerate(args.hypergraphs)
     append!(Vs, _Vs)
     append!(labels, fill(label, nLabel))
 end
+
+if args[Symbol("0H")]
+    for H in Hs H .= 0 end
+end
+if args[Symbol("0W")]
+    for W in Ws W .= 0 end
+end
+if args[Symbol("0V")]
+    for V in Vs V .= 0 end
+end
+
 
 # wait till after possible -h/--help call and file assertions
 using Statistics # mean, cor
