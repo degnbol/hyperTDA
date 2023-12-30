@@ -1,13 +1,17 @@
 #!/usr/bin/env julia
 using MKL # potential speedup over openBLAS
 using CUDA # use GPU if available
-include("glob.jl") # glob that accepts abspath
-include("string_utils.jl") # prefixSuffixPairs
+ROOT = `git root` |> readchomp
+include("$ROOT/src/glob.jl") # glob that accepts abspath
+include("$ROOT/src/string_utils.jl") # prefixSuffixPairs
 using DelimitedFiles
 using Random # shuffle
 using BSON: @load, @save
 using ArgParse
 using Dates
+
+@assert CUDA.functional()
+flush(stderr)
 
 parser = ArgParseSettings(autofix_names=true, description="""
 Take incidence matrix, e.g. 1s and 0s H or uninterpolated incidence matrix 
@@ -132,12 +136,11 @@ if abspath(PROGRAM_FILE) == @__FILE__
     args = ARGS
 else
     # if interactive, do an example
-    ROOT = readchomp(`git root`)
-    fnames_H = ["$ROOT/results/AnDi/Model_$i/H" for i in 0:4]
-    fnames_V = ["$ROOT/results/AnDi/Model_$i/nodeCents" for i in 0:4]
+    fnames_H = ["$ROOT/results/AnDi/matroid_generators/Model_$i/H" for i in 0:4]
+    fnames_V = ["$ROOT/results/AnDi/matroid_generators/Model_$i/nodeCents" for i in 0:4]
     fnames_H = join(fnames_H, ' ')
     fnames_V = join(fnames_V, ' ')
-    args = split("-m 8 -H $fnames_H -V $fnames_V", ' ')
+    args = split("-m 8 -s 20 --cv --0H -H $fnames_H -V $fnames_V", ' ')
 end
 args = parse_args(args, parser, as_symbols=true)
 
@@ -265,6 +268,8 @@ for (label, glob_H) ∈ enumerate(args.hypergraphs)
     append!(labels, fill(label, nLabel))
 end
 
+@assert length(Hs) > 0 "No hypergraphs read."
+
 if args[Symbol("0H")]
     for H in Hs H .= 0 end
 end
@@ -279,10 +284,10 @@ end
 # wait till after possible -h/--help call and file assertions
 using Statistics # mean, cor
 using Printf
-include("flux_utils.jl")
-include("array_utils.jl") # add_dim
-include("hypergraph_utils.jl") # for args.pre
-include("AUC.jl")
+include("$ROOT/src/flux_utils.jl")
+include("$ROOT/src/array_utils.jl") # add_dim
+include("$ROOT/src/hypergraph_utils.jl") # for args.pre
+include("$ROOT/src/AUC.jl")
 # not implemented for GPU
 AUC(ŷ::CuArray, y::CuArray) = AUC(cpu(ŷ), cpu(y))
 
@@ -581,6 +586,7 @@ for iTest ∈ iTests
         params = Flux.params(model)
 
         println("Epoch\tCE\tAcc\tAUC\tTestAUC\tTime")
+        flush(stdout)
         push!(best_params, deepcopy(collect(params)))
         best_auc = auc(testset, model)
         best_epoch = 0
