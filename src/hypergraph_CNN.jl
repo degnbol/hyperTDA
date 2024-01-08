@@ -133,8 +133,8 @@ if abspath(PROGRAM_FILE) == @__FILE__
 else
     # if interactive, do an example
     ROOT = readchomp(`git root`)
-    fnames_H = ["$ROOT/results/AnDi/Model_$i/H" for i in 0:4]
-    fnames_V = ["$ROOT/results/AnDi/Model_$i/nodeCents" for i in 0:4]
+    fnames_H = ["$ROOT/results/AnDi/matroid_generators/Model_$i/H" for i in 0:4]
+    fnames_V = ["$ROOT/results/AnDi/matroid_generators/Model_$i/nodeCents" for i in 0:4]
     fnames_H = join(fnames_H, ' ')
     fnames_V = join(fnames_V, ' ')
     args = split("-m 8 -H $fnames_H -V $fnames_V", ' ')
