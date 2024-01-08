@@ -16,6 +16,7 @@ if env
 else
     Pkg.add([
     "Flux",
+    "CUDA",
     "Eirene",
     "ArgParse",
     "BSON",
