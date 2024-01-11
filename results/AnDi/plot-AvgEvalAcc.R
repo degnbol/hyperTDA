@@ -5,7 +5,7 @@ suppressPackageStartupMessages(library(ggplot2))
 library(ggpattern)
 
 dt = fread("./avgEvalAcc.tsv")
-dt$Models = factor(dt$Models, levels=c("all 5", "1,3,4"))
+dt[Models=="1,3,4", Models:="CTRW, LW, SBM"]
 dt$Input = factor(dt$Input, levels=c("H+V", "H", "V"))
 
 ggplot(dt, aes(y=AvgEvalAcc, x=Models, pattern=Input, pattern_angle=Input, fill=Generators)) +
@@ -26,20 +26,22 @@ ggsave("avgEvalAcc.pdf", width=5, height=5)
 # Only showing for input=H as V is clearly worse.
 # Only showing for matroid as that's what we did before.
 
-dtHV = fread("./matroid_generators/CNN/pred.tsv")
-dtHV134 = fread("./matroid_generators/CNN/pred_134.tsv")
-dt0V = fread("./matroid_generators/CNN/pred_0V.tsv")
-dt0V134 = fread("./matroid_generators/CNN/pred_0V_134.tsv")
-dtHV[, c("Models", "Input"):=.("all 5", "H+V")]
-dtHV134[, c("Models", "Input"):=.("1,3,4", "H+V")]
-dt0V[, c("Models", "Input"):=.("all 5", "H")]
-dt0V134[, c("Models", "Input"):=.("1,3,4", "H")]
-dt = rbind(dtHV, dtHV134, dt0V, dt0V134)
+dt = rbind(
+fread("./matroid_generators/CNN/pred.tsv"       )[, c("Generators", "Models", "Input"):=.("matroid", "all 5", "H+V")][],
+fread("./matroid_generators/CNN/pred_134.tsv"   )[, c("Generators", "Models", "Input"):=.("matroid", "1,3,4", "H+V")][],
+fread("./minimal_generators/CNN/pred.tsv"       )[, c("Generators", "Models", "Input"):=.("minimal", "all 5", "H+V")][],
+fread("./minimal_generators/CNN/pred_134.tsv"   )[, c("Generators", "Models", "Input"):=.("minimal", "1,3,4", "H+V")][],
+fread("./matroid_generators/CNN/pred_0V.tsv"    )[, c("Generators", "Models", "Input"):=.("matroid", "all 5", "H")][],
+fread("./matroid_generators/CNN/pred_0V_134.tsv")[, c("Generators", "Models", "Input"):=.("matroid", "1,3,4", "H")][]
+)
 
-dt = dt[, .N, by=c("Pred", "Label", "Models", "Input")]
+# overall acc for the manus.
+dt[, mean(Pred==Label), by=c("Models", "Input")]
+
+dt = dt[, .N, by=c("Generators", "Pred", "Label", "Models", "Input")]
 
 # 1,3,4 is zero indexed so we need 2,4,5. The file has 1,2,3.
-dt[Models=="1,3,4", c("Pred", "Label"):=.(Pred+1, Label+1)]
+dt[ Models=="1,3,4" , c("Pred", "Label"):=.(Pred+1, Label+1)]
 dt[(Models=="1,3,4") & (Pred>2), Pred:=Pred+1]
 dt[(Models=="1,3,4") & (Label>2), Label:=Label+1]
 
@@ -47,8 +49,8 @@ modelNames = c("ATTM", "CTRW", "FBM", "LW", "SBM")
 dt[, "Predicted model":=modelNames[Pred]]
 dt[, "True model":=modelNames[Label]]
 
-plt = function(df) {
-    ggplot(df, aes(x=`Predicted model`, y=`True model`, fill=N, label=N)) +
+plt = function(df, fname) {
+    p = ggplot(df, aes(x=`Predicted model`, y=`True model`, fill=N, label=N)) +
         geom_tile() +
         geom_label(aes(color=N>2000), label.size=NA) +
         scale_fill_gradient(low="white", high="#58228e", guide=NULL) +
@@ -57,14 +59,13 @@ plt = function(df) {
         scale_y_discrete(expand=c(0,0)) +
         theme_minimal() +
         theme(panel.grid.major=element_blank(), panel.grid.minor=element_blank())
+    ggsave(fname, p, width=3, height=3)
 }
 
-plt(dt[(Models=="all 5") & (Input=="H+V")])
-ggsave("avgEvalAcc_All5_HV.pdf", width=5, height=5)
-plt(dt[(Models=="all 5") & (Input=="H")])
-ggsave("avgEvalAcc_All5_H.pdf", width=5, height=5)
-plt(dt[(Models=="1,3,4") & (Input=="H+V")])
-ggsave("avgEvalAcc_134_HV.pdf", width=5, height=5)
-plt(dt[(Models=="1,3,4") & (Input=="H")])
-ggsave("avgEvalAcc_134_H.pdf", width=5, height=5)
+plt(dt[(Generators=="matroid") & (Models=="all 5") & (Input=="H+V")], "avgEvalAcc_All5_HV.pdf")
+plt(dt[(Generators=="minimal") & (Models=="all 5") & (Input=="H+V")], "avgEvalAcc_All5_HV_minimal.pdf")
+plt(dt[(Generators=="minimal") & (Models=="1,3,4") & (Input=="H+V")], "avgEvalAcc_134_HV_minimal.pdf")
+plt(dt[(Generators=="matroid") & (Models=="all 5") & (Input=="H")],   "avgEvalAcc_All5_H.pdf")
+plt(dt[(Generators=="matroid") & (Models=="1,3,4") & (Input=="H+V")], "avgEvalAcc_134_HV.pdf")
+plt(dt[(Generators=="matroid") & (Models=="1,3,4") & (Input=="H")],   "avgEvalAcc_134_H.pdf")
 
