@@ -2,7 +2,7 @@
 using JSON
 using StatsBase
 using Printf
-using NPZ
+# using NPZ
 using SparseArrays
 using Chain: @chain
 using DataFrames, CSV
@@ -85,7 +85,10 @@ function uninterp_average_weight(xyz2interp::Vector{Int}, xyzs_i::Matrix)
     # norm so weights sum to 1 for each real node
     D = D ./ sum(D; dims=2) |> dropzeros
 end
-"-df: DataFrame with x, y, z columns and bool column indicating interpolation."
+"""
+-df: DataFrame with x, y, z columns and bool column indicating interpolation.
+- return: Matrix converting between interp and uninterp indices.
+"""
 function uninterp_average_weight(df::DataFrame; interp::AbstractString="interp",
         x::AbstractString="x", y::AbstractString="y", z::AbstractString="z")
     uninterp_average_weight(BitVector(df[:, interp]), Matrix(df[:, [x,y,z]]))   
