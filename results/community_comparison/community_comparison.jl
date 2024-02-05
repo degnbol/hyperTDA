@@ -17,7 +17,11 @@ mats = Matrix{Float64}[]
 nodeCents = Vector{Float64}[]
 persistences = Vector{Float64}[]
 
-for (interp, fname, centDir) in zip(["default_pipeline", "with_interpolation"], ["curve", "AnDi"], ["nodeCents", "nodeCents_uninterp"])
+for (interp, fname, centDir) in zip(
+    ["default_pipeline", "with_interpolation"],
+    ["curve", "AnDi"],
+    ["nodeCents", "nodeCents_uninterp"]
+)
     folder = "$ROOT/examples/$interp/"
     for iCurve in 1:2
         # H has dim #nodes × #hyperedges
