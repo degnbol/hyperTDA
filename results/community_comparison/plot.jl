@@ -5,6 +5,7 @@ using JSON
 using Clustering
 using Chain
 using NPZ
+using Statistics: mean
 ROOT = `git root` |> readchomp
 include("$ROOT/src/plotlyjs_util.jl")
 
