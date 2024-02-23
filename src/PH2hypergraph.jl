@@ -28,7 +28,7 @@ but that is never used.
 function read_PH2hypergraph(path::AbstractString; edgesAsHypernodes::Bool=false)
     PH = JSON.parsefile(path)
     
-    barcodes = hcat(PH["barcode"]...)
+    barcodes::Matrix{Float64} = hcat(PH["barcode"]...)
     @assert size(barcodes, 2) == 2 "Update code to handle transposed barcodes"
     # persistences will be used as hyper edge weights
     persistences = barcodes[:, 2] - barcodes[:, 1]
@@ -37,7 +37,9 @@ function read_PH2hypergraph(path::AbstractString; edgesAsHypernodes::Bool=false)
     # representatives are each 2-tuples (edges). 
     representatives = PH["representatives"]
     N = haskey(PH, "N") ? PH["N"] : nothing
-    hyperedges = representatives2hyperedges(representatives, edgesAsHypernodes)
+    # annotate type in case we have a trivial case.
+    # It will avoid errors and we will write an empty file.
+    hyperedges::Vector{Set{Int}} = representatives2hyperedges(representatives, edgesAsHypernodes)
     hyperedges2B(hyperedges, N), persistences
 end
 "Only get B matrix."
