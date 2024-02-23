@@ -1,4 +1,8 @@
 #!/usr/bin/env zsh
 # on spartan to use gurobi
-module load Gurobi && xyz2PH_minimal.jl example_3.npy PH_minimal/
+# Gurobi.jl also can only be installed after loading module
+module load Gurobi
+
+PLPH=~/PLPH
+$PLPH/src/xyz2PH_minimal.jl example_3.npy PH_minimal/
 

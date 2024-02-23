@@ -6,6 +6,8 @@ cd $0:h
 # start with a folder pointClouds/ with .npy or .tsv files where each file is a 
 # matrix with 3 columns.
 
+unzip pointClouds.zip
+
 echo "persistent homology"
 xyz2PH.jl pointClouds/ PH/
 
