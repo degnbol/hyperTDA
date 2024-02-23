@@ -54,13 +54,17 @@ else
 end
 mkpath(outdir)
 
-npys = fnames[endswith.(fnames, ".npy")]
-tsvs = fnames[endswith.(fnames, ".tsv")]
+npys = endswith.(fnames, ".npy")
+tsvs = endswith.(fnames, ".tsv")
 # println([npys; tsvs])
-if isempty(tsvs) && !isempty(npys)
-    pointclouds = npzread.(npys)
-elseif isempty(npys) && !isempty(tsvs)
-    pointclouds = CSV.read.(tsvs, DataFrame; delim='\t')
+if !any(tsvs) && any(npys)
+    println("Found $(sum(npys)) .npys")
+    fnames = fnames[npys]
+    pointclouds = npzread.(fnames)
+elseif !any(npys) && any(tsvs)
+    println("Found $(sum(tsvs)) .tsvs")
+    fnames = fnames[tsvs]
+    pointclouds = CSV.read.(fnames, DataFrame; delim='\t')
     # assume there exist 3 columns named x,y,z
     pointclouds = [pc[:, ["x", "y", "z"]] for pc in pointclouds] .|> Matrix
 elseif isempty([npys; tsvs])
