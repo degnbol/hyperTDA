@@ -9,18 +9,22 @@ dt[Models=="1,3,4", Models:="CTRW, LW, SBM"]
 dt$Input = factor(dt$Input, levels=c("H+V", "H", "V"))
 
 ggplot(dt, aes(y=AvgEvalAcc, x=Models, pattern=Input, pattern_angle=Input, fill=Generators)) +
-    geom_col_pattern(position="dodge",
-                     pattern_fill = "black", pattern_color=NA,
-                     pattern_density = 0.05,
-                     pattern_spacing = 0.05,
-                     pattern_key_scale_factor = 1) +
-    scale_y_continuous(name="Mean evaluation accuracy", expand=expansion(mult=c(0,0)), limits=c(0,1)) +
+    geom_col_pattern(
+        position="dodge",
+        color="black",
+        pattern_fill = "black", pattern_color=NA,
+        pattern_density = 0.15,
+        pattern_spacing = 0.03,
+        # the scaling in the legend compared to on the plot.
+        pattern_key_scale_factor = 1) +
+    scale_y_continuous(name="Average evaluation accuracy", expand=expansion(mult=c(0,0)), limits=c(0,1)) +
     scale_pattern_manual(values=c(`H+V`="crosshatch", H="stripe", V="stripe")) +
     scale_pattern_angle_manual(values=c(`H+V`=45, H=45, V=-45)) +
+    scale_fill_manual(values=c("gray", "white")) +
     theme_minimal() +
     theme(panel.grid.major.x=element_blank())
-
-ggsave("avgEvalAcc.pdf", width=5, height=5)
+ggsave("avgEvalAcc.pdf", width=4, height=4)
+ggsave("avgEvalAcc.svg", width=4, height=4)
 
 # now for the details of which model is mistaken for which.
 # Only showing for input=H as V is clearly worse.
