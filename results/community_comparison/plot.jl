@@ -5,7 +5,7 @@ using JSON
 using Clustering
 using Chain
 using NPZ
-using Statistics: mean
+using Statistics: mean, median
 ROOT = `git root` |> readchomp
 include("$ROOT/src/plotlyjs_util.jl")
 
@@ -72,29 +72,65 @@ add_trace!(p, heatmap(dfMetrics[4]; x=:label_i, y=:label_j, z=:vmeasure), row=2,
 heatmap!(p; width=750*1.5, height=700*1.5)
 savefig(p, "figures/vmeasure.pdf", width=round(Int,750*1.5), height=round(Int,700*1.5))
 
-function singleton0!(df)
-    # community 0 is for singletons. Place them here unless there already is a community 0.
-    comm = df.community
-    uniq = comm |> unique
-    singletons = uniq[[sum(comm .== u) == 1 for u in uniq]]
-    if !isempty(singletons)
-        @assert 0 ∉ comm
-        df.community[comm .∈ Ref(singletons)] .= 0
+"""
+Relabel communities for plotting.
+0 will refer to all singletons in output and is understood as such if given in the input.
+1... will be the rest, where the new label is sorted according to the median along the spatial curve for each cluster.
+Assumes input is ordered along the curve.
+"""
+function order_comms(comms::Vector{Int})
+    out = zeros(Int, length(comms))
+    uComm = comms |> unique
+    singletons = uComm[[sum(comms .== u) == 1 for u in uComm]]
+    uComm = setdiff(uComm, [singletons; 0]) # 0 to take each input 0 as a singleton
+
+    medians = [median(findall(comms .== u)) for u in uComm]
+    # sort according to medians
+    uComm = uComm[sortperm(medians)]
+    
+    for (i, u) in enumerate(uComm)
+        out[comms .== u] .= i
     end
-    df
+    out
 end
 
-function trace3d(df)
-    palette = ["gray", "#09ffff", "#e763fa", "#ab63fa", "blue", "red", "maroon", "green"]
-    colorscale = setdiff(unique(df.community), [0])
-    colorscale = [0; colorscale ./ maximum(colorscale; init=1)] # colorscale [0, 1]
-    colorscale = zip(colorscale, palette) |> collect
-
-    scatter3d(df; x=:x, y=:y, z=:z, marker=attr(
+"""
+- comms: manual override of colorscale
+"""
+function trace3d(_df; comms=nothing)
+    if comms === nothing comms = sort(unique(_df.community)) end
+    comms = setdiff(comms, [0])
+    palette = ["#09ffff", "#e763fa", "blue", "red", "maroon", "green"][comms]
+    # plotly does colorscales weird, so we need colorscale to be [[0, "gray"], [...], ..., [1, COLOUR]]
+    colorscale = [[0, "gray"], [[i/length(palette), col] for (i,col) in enumerate(palette)]...]
+    scatter3d(_df; x=:x, y=:y, z=:z, marker=attr(
         autocolorscale=false, # use manual scale
-        color=df.community, # has to be numerical array as per help for autocolorscale
-        colorscale=colorscale
+        color=_df.community, # has to be numerical array as per help for autocolorscale
+        colorscale=colorscale,
     ))
+end
+function plot_trace3d(_df)
+    plot(trace3d(_df), Layout(
+        template="plotly_white",
+        paper_bgcolor="rgba(1,1,1,0)" # transparent bg doesn't work
+    ))
+end
+function plot_trace3d(method::String, dataseti::Int; comms=nothing)
+    E = method == "Louvain"
+    _df = df[
+        (df.dataset .== "default_pipeline") .&
+        (df.dataseti .== dataseti) .&
+        (df.method .== method) .&
+        (df.E .== E) .&
+        (df.V .== false), :]
+    @assert nrow(_df) > 0 "No data selected"
+    _df.community = order_comms(_df.community)
+    plot(trace3d(_df; comms=comms), Layout(template=:plotly_white))
+end
+function save_trace3d(method::String, dataseti::Int=2; comms=nothing)
+    E = method == "Louvain"
+    fig = plot_trace3d(method, dataseti; comms=comms)
+    savefig(fig, "figures/default_pipeline$dataseti-$method$(E ? "E" : "").pdf")
 end
 
 # annotate xyz
@@ -102,14 +138,15 @@ leftjoin!(df, dfPC, on=[:dataset, :dataseti, :residue])
 
 for dataseti in 1:2
     for method in unique(df.method)
-        E = method == "Louvain"
-        p = df[
-            (df.dataset .== "default_pipeline") .&
-            (df.dataseti .== dataseti) .&
-            (df.method .== method) .&
-            (df.E .== E) .&
-            (df.V .== false), :] |> singleton0! |> trace3d |> plot
-        savefig(p, "figures/default_pipeline$dataseti-$method$(E ? "E" : "").html")
+        fig = plot_trace3d(method, dataseti)
+        # savefig(fig, "figures/default_pipeline$dataseti-$method$(E ? "E" : "").html")
     end
 end
+
+save_trace3d("Leiden")
+save_trace3d("Louvain")
+save_trace3d("CliqueLouvain"; comms=[1, 5, 3, 4, 2])
+save_trace3d("CFMRandom"; comms=[5])
+save_trace3d("CFMCNMLike"; comms=[1, 3, 4])
+save_trace3d("AON_Louvain"; comms=[2, 5, 4])
 
