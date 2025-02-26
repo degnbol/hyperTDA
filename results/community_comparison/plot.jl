@@ -109,8 +109,8 @@ function trace3d(_df; comms=nothing)
         colorscale=colorscale,
     ))
 end
-function plot_trace3d(_df)
-    plot(trace3d(_df), Layout(
+function plot_trace3d(_df::DataFrame; comms=nothing)
+    plot(trace3d(_df; comms=comms), Layout(
         template="plotly_white",
         paper_bgcolor="rgba(1,1,1,0)", # transparent bg doesn't work in pdf
         scene=attr(
@@ -130,7 +130,7 @@ function plot_trace3d(method::T, dataseti::Int; comms=nothing) where T<:Abstract
         (df.V .== false), :]
     @assert nrow(_df) > 0 "No data selected"
     _df.community = order_comms(_df.community)
-    plot_trace3d(_df)
+    plot_trace3d(_df; comms=comms)
 end
 function save_trace3d(method::T, dataseti::Int=2; comms=nothing) where T<:AbstractString
     E = method == "Louvain"
