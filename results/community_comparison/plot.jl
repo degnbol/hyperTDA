@@ -112,10 +112,15 @@ end
 function plot_trace3d(_df)
     plot(trace3d(_df), Layout(
         template="plotly_white",
-        paper_bgcolor="rgba(1,1,1,0)" # transparent bg doesn't work
+        paper_bgcolor="rgba(1,1,1,0)", # transparent bg doesn't work in pdf
+        scene=attr(
+            xaxis_zeroline=false,
+            yaxis_zeroline=false,
+            zaxis_zeroline=false,
+        ),
     ))
 end
-function plot_trace3d(method::String, dataseti::Int; comms=nothing)
+function plot_trace3d(method::T, dataseti::Int; comms=nothing) where T<:AbstractString
     E = method == "Louvain"
     _df = df[
         (df.dataset .== "default_pipeline") .&
@@ -125,12 +130,19 @@ function plot_trace3d(method::String, dataseti::Int; comms=nothing)
         (df.V .== false), :]
     @assert nrow(_df) > 0 "No data selected"
     _df.community = order_comms(_df.community)
-    plot(trace3d(_df; comms=comms), Layout(template=:plotly_white))
+    plot_trace3d(_df)
 end
-function save_trace3d(method::String, dataseti::Int=2; comms=nothing)
+function save_trace3d(method::T, dataseti::Int=2; comms=nothing) where T<:AbstractString
     E = method == "Louvain"
     fig = plot_trace3d(method, dataseti; comms=comms)
-    savefig(fig, "figures/default_pipeline$dataseti-$method$(E ? "E" : "").pdf")
+    # half of paperwidth minus margins, 200 DPI
+    width = round(Int, (21 - 3) / 2 * 0.4 * 200)
+    savefig(
+        fig, "figures/default_pipeline$dataseti-$method$(E ? "E" : "").pdf";
+        width=width,
+        height=round(Int, width * .72),
+        scale=2,
+    )
 end
 
 # annotate xyz
