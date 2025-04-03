@@ -92,7 +92,7 @@ pointclouds = xyz_dim1.(pointclouds)
         maxrad = maximum(d)
         numrad = args.dist === nothing ? Inf : ceil(Int, maxrad / args.dist)
         maxdim = args.H2 ? 2 : 1
-        PH = eirene(d, maxdim=maxdim, minrad=0, maxrad=maxrad, numrad=numrad)
+        PH = eirene(d; maxdim=maxdim, minrad=0, maxrad=maxrad, numrad=numrad)
         b1 = barcode(PH, dim=1)
         r1 = [classrep(PH, class=i, dim=1) for i in 1:size(b1, 1)]
         if args.H2
